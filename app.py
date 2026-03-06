@@ -1,16 +1,13 @@
 
 from flask import Flask, render_template, request, jsonify
 import requests
+import os
 
 app = Flask(__name__)
 
-# Simple conversation memory
-conversation_memory = []
-MAX_MEMORY = 10
-
-# HuggingFace model
-API_TOKEN = "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"
-API_URL = "https://api-inference.huggingface.co/models/microsoft/DialoGPT-medium"
+# HuggingFace API
+API_TOKEN = os.environ.get("HF_TOKEN", "")
+API_URL = "https://api-inference.huggingface.co/models/google/flan-t5-base"
 
 headers = {
     "Authorization": f"Bearer {API_TOKEN}"
@@ -27,31 +24,25 @@ def chat():
     if not user_message:
         return jsonify({"reply": "No message received"})
 
-    conversation_memory.append("User: " + user_message)
-    conversation_memory[:] = conversation_memory[-MAX_MEMORY:]
-
-    prompt = "\n".join(conversation_memory)
-
-    payload = {
-        "inputs": prompt
-    }
+    payload = {"inputs": user_message}
 
     try:
-        response = requests.post(API_URL, headers=headers, json=payload)
+        response = requests.post(API_URL, headers=headers, json=payload, timeout=30)
         result = response.json()
 
         if isinstance(result, list) and "generated_text" in result[0]:
             ai_reply = result[0]["generated_text"]
+        elif isinstance(result, dict) and "error" in result:
+            ai_reply = "Model is loading. Please try again in a few seconds."
         else:
-            ai_reply = "Model response error"
+            ai_reply = "AI response error"
 
     except Exception as e:
-        ai_reply = "Error: " + str(e)
-
-    conversation_memory.append("AI: " + ai_reply)
+        ai_reply = "Server error: " + str(e)
 
     return jsonify({"reply": ai_reply})
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host="0.0.0.0", port=port)
