@@ -9,7 +9,7 @@ conversation_memory = []
 MAX_MEMORY = 10
 
 # HuggingFace model
-API_TOKEN = "YOUR_HUGGINGFACE_TOKEN"
+API_TOKEN = "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"
 API_URL = "https://api-inference.huggingface.co/models/microsoft/DialoGPT-medium"
 
 headers = {
