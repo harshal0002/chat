@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Ollama AI Chat</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<div class="chat-container">
+    <div class="chat-header">🦙 Ollama AI Chat</div>
+    <div id="chat-box" class="chat-box"></div>
+
+    <div class="chat-input-area">
+        <input type="text" id="user-input" placeholder="Type a message..." />
+        <button onclick="sendMessage()">Send</button>
+    </div>
+</div>
+
+<script>
+function sendMessage() {
+    const inputField = document.getElementById("user-input");
+    const message = inputField.value.trim();
+
+    if (!message) return;
+
+    appendMessage("user", message);
+    inputField.value = "";
+
+    showTypingIndicator();
+
+    fetch("/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: message })
+    })
+    .then(res => res.json())
+    .then(data => {
+        removeTypingIndicator();
+
+        if (data.reply) {
+            appendMessage("assistant", data.reply);
+        } else {
+            appendMessage("assistant", "⚠ Error: " + data.error);
+        }
+    })
+    .catch(err => {
+        removeTypingIndicator();
+        appendMessage("assistant", "⚠ Server error");
+    });
+}
+
+function appendMessage(sender, text) {
+    const chatBox = document.getElementById("chat-box");
+
+    const msgDiv = document.createElement("div");
+    msgDiv.classList.add("message", sender);
+    msgDiv.innerText = text;
+
+    chatBox.appendChild(msgDiv);
+    chatBox.scrollTop = chatBox.scrollHeight;
+}
+
+function showTypingIndicator() {
+    const chatBox = document.getElementById("chat-box");
+
+    const typingDiv = document.createElement("div");
+    typingDiv.classList.add("message", "assistant");
+    typingDiv.id = "typing";
+    typingDiv.innerText = "Typing...";
+
+    chatBox.appendChild(typingDiv);
+    chatBox.scrollTop = chatBox.scrollHeight;
+}
+
+function removeTypingIndicator() {
+    const typing = document.getElementById("typing");
+    if (typing) typing.remove();
+}
+
+document.getElementById("user-input")
+    .addEventListener("keypress", function(e) {
+        if (e.key === "Enter") {
+            sendMessage();
+        }
+    });
+</script>
+
+</body>
+</html>
